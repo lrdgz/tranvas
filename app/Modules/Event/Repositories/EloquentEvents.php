@@ -4,6 +4,8 @@
 namespace App\Modules\Event\Repositories;
 
 use App\Modules\Event\Event;
+use App\Modules\Event\Events\EventRegistered;
+use App\Modules\Event\Participant;
 use App\Repositories\AbstractRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -36,7 +38,23 @@ class EloquentEvents extends AbstractRepository implements EventRepository {
 
     public function getPastEvents(){
         $today = Carbon::today()->format('Y-m-d');
-       $this->model->where('end_date', '<', $today)->orderBy('start_date','desc')->get();
+        $this->model->where('end_date', '<', $today)->orderBy('start_date','desc')->get();
+    }
+
+    public function registerForEvent($event){
+        Participant::create([
+            'event_id' => $event->id,
+            'user_id' => Auth::user()->id
+        ]);
+
+        event(new EventRegistered($event, Auth::user()));
+
+        return true;
+    }
+
+    public function deRegisterFromEvent($event){
+        Participant::where('event_id' , $event->id)->where('user_id' , Auth::user()->id)->delete();
+        return true;
     }
 
 }
